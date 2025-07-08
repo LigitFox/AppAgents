@@ -54,14 +54,7 @@ const AgentsPage = () => {
                 className="mt-2 px-4 py-2 bg-blue-500 text-white rounded"
                 disabled={isLoading}
               >
-                {isLoading ? "Regenerating..." : "Regenerate Idea"}
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveIdea}
-                className="mt-2 px-4 py-2 bg-green-500 text-white rounded"
-              >
-                Save to Idea Bank
+                {isLoading ? "Starting..." : "Start Workflow"}
               </button>
             </div>
           </form>

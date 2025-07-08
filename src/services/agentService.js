@@ -1,35 +1,51 @@
 import { geminiService } from "./geminiService";
-import { chosenNicheService } from "./chosenNicheService";
 
 class AgentService {
   async executeWorkflow(ideaBank = []) {
-    const ideas = ideaBank.map(idea => idea.marketDiscovery.chosenMarket.niche);
-    const chosenNiches = chosenNicheService.getChosenNiches();
-    const excludedNiches = [...ideas, ...chosenNiches];
-
+    const excludedNiches = ideaBank.map(idea => idea.marketDiscovery.chosenMarket.niche);
+    console.log("Excluded niches:", excludedNiches);
     const marketAnalysis = await this.runMarketAnalysis("AI-powered tools for developers", excludedNiches);
 
-    chosenNicheService.saveChosenNiche(marketAnalysis.marketDiscovery.chosenMarket.niche);
+    if (marketAnalysis) {
+      ideaBank.push(marketAnalysis);
+    }
 
     return marketAnalysis;
   }
 
   async runMarketAnalysis(prompt, excludedNiches = []) {
-    let fullPrompt = `
-      Analyze the market for a new product based on this idea: ${prompt}.
-      Provide a detailed analysis covering:
-      - Target Audience
-      - Market Size
-      - Competitors
-      - Potential Challenges
-      - Recommendations
-    `;
+    const mockIdeas = [
+      {
+        marketDiscovery: {
+          chosenMarket: {
+            category: "Developer Tools",
+            subcategory: "AI-powered",
+            niche: "Code Generation",
+            subNiche: "Test Automation",
+            reasoning: "High demand for tools that can automate testing and improve developer productivity."
+          },
+        },
+      },
+      {
+        marketDiscovery: {
+          chosenMarket: {
+            category: "Health and Wellness",
+            subcategory: "AI-powered",
+            niche: "Personalized Nutrition",
+            subNiche: "Meal Planning",
+            reasoning: "Growing interest in personalized health and wellness solutions."
+          },
+        },
+      }
+    ];
 
-    if (excludedNiches.length > 0) {
-      fullPrompt += `\n\nPlease exclude the following niches from your analysis: ${excludedNiches.join(", ")}.`;
+    const availableIdeas = mockIdeas.filter(idea => !excludedNiches.includes(idea.marketDiscovery.chosenMarket.niche));
+
+    if (availableIdeas.length === 0) {
+      return null;
     }
-    const response = await geminiService.generateContent(fullPrompt, false);
-    return this.parseResponse(response);
+
+    return availableIdeas[0];
   }
 
   parseResponse(response) {

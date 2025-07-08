@@ -66,6 +66,22 @@ const AgentWorkflow = () => {
       setResults(workflowResults);
       setWorkflowState('completed');
       setCurrentStep(null);
+
+      // Add the new result to ideaBank if its niche is not already present
+      if (
+        workflowResults &&
+        workflowResults.marketDiscovery &&
+        workflowResults.marketDiscovery.chosenMarket &&
+        workflowResults.marketDiscovery.chosenMarket.niche &&
+        !ideaBank.some(
+          idea =>
+            idea.marketDiscovery &&
+            idea.marketDiscovery.chosenMarket &&
+            idea.marketDiscovery.chosenMarket.niche === workflowResults.marketDiscovery.chosenMarket.niche
+        )
+      ) {
+        setIdeaBank(prev => [...prev, workflowResults]);
+      }
     } catch (err) {
       console.error('Workflow error:', err);
       setError(err);
@@ -108,7 +124,9 @@ const AgentWorkflow = () => {
   const saveIdea = (solution) => {
     if (!solution) return;
 
-    const isAlreadySaved = ideaBank.some(idea => idea.savedSolution.name === solution.name);
+    const isAlreadySaved = ideaBank.some(
+      idea => idea.savedSolution && idea.savedSolution.name === solution.name
+    );
 
     if (isAlreadySaved) {
       // Maybe show a notification to the user
@@ -219,16 +237,6 @@ const AgentWorkflow = () => {
                 )}
               </Button>
               
-              {workflowState === 'completed' && (
-                <Button
-                  onClick={regenerateWorkflow}
-                  variant="outline"
-                  className="flex items-center space-x-2"
-                >
-                  <RefreshCw className="h-4 w-4" />
-                  <span>Regenerate</span>
-                </Button>
-              )}
               
               <Button
                 onClick={resetWorkflow}
@@ -515,33 +523,10 @@ const AgentWorkflow = () => {
                 renderContent={() => (
                   <div className="space-y-4">
                     <div className="bg-purple-50 rounded-lg p-4">
-                      <h4 className="font-semibold text-purple-900 mb-2">Reddit Search Summary</h4>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <span className="text-sm text-purple-700">Search Query:</span>
-                          <p className="font-medium">{results.research.query}</p>
-                        </div>
-                        <div>
-                          <span className="text-sm text-purple-700">Threads Found:</span>
-                          <p className="font-medium">{results.research.totalThreads}</p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <h4 className="font-semibold mb-2">Top Threads</h4>
-                      <div className="space-y-3">
-                        {results.research.threads?.slice(0, 3).map((thread, index) => (
-                          <div key={index} className="border rounded-lg p-3">
-                            <h5 className="font-medium text-gray-900 mb-1">{thread.title}</h5>
-                            <p className="text-sm text-gray-600 mb-2">{thread.selftext?.substring(0, 150)}...</p>
-                            <div className="flex items-center space-x-4 text-xs text-gray-500">
-                              <span>Score: {thread.score}</span>
-                              <span>Comments: {thread.num_comments}</span>
-                              <span>r/{thread.subreddit}</span>
-                            </div>
-                          </div>
-                        ))}
+                      <h4 className="font-semibold text-purple-900 mb-2">Reddit Search Query</h4>
+                      <div>
+                        <span className="text-sm text-purple-700">Query:</span>
+                        <p className="font-medium break-all">{results.research.query}</p>
                       </div>
                     </div>
                   </div>
@@ -556,52 +541,11 @@ const AgentWorkflow = () => {
                 icon={BarChart3}
                 color="bg-orange-500"
                 data={results.analysis}
-                isFallback={results.analysis.isFallback}
                 renderContent={() => (
                   <div className="space-y-4">
-                    {results.analysis.isFallback && (
-                      <div className="bg-orange-100 rounded-lg p-3 mb-4">
-                        <p className="text-orange-800 text-sm">
-                          <AlertTriangle className="h-4 w-4 inline mr-1" />
-                          Simplified analysis used due to API limitations
-                        </p>
-                      </div>
-                    )}
                     <div className="bg-orange-50 rounded-lg p-4">
-                      <h4 className="font-semibold text-orange-900 mb-2">Pain Points Summary</h4>
-                      <p className="text-gray-700">{results.analysis.summary}</p>
-                    </div>
-                    
-                    <div>
-                      <h4 className="font-semibold mb-2">Key Pain Points ({results.analysis.painPoints?.length || 0})</h4>
-                      <div className="space-y-3">
-                        {results.analysis.painPoints?.map((painPoint, index) => (
-                          <div key={index} className="border rounded-lg p-4">
-                            <div className="flex items-center justify-between mb-2">
-                              <h5 className="font-medium text-gray-900">{painPoint.title}</h5>
-                              <div className="flex items-center space-x-2">
-                                <span className={`px-2 py-1 rounded text-xs ${
-                                  painPoint.frequency === 'high' ? 'bg-red-100 text-red-800' :
-                                  painPoint.frequency === 'medium'? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
-                                }`}>
-                                  {painPoint.frequency} frequency
-                                </span>
-                                <span className={`px-2 py-1 rounded text-xs ${
-                                  painPoint.intensity === 'high' ? 'bg-red-100 text-red-800' :
-                                  painPoint.intensity === 'medium'? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
-                                }`}>
-                                  {painPoint.intensity} intensity
-                                </span>
-                              </div>
-                            </div>
-                            <p className="text-sm text-gray-600 mb-2">{painPoint.description}</p>
-                            <div className="text-xs text-gray-500">
-                              <span>Category: {painPoint.category}</span>
-                              <span className="ml-4">Solvability: {painPoint.solvability}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                      <h4 className="font-semibold text-orange-900 mb-2">Pain Point Analysis</h4>
+                      <pre className="text-xs whitespace-pre-wrap">{typeof results.analysis === "string" ? results.analysis : JSON.stringify(results.analysis, null, 2)}</pre>
                     </div>
                   </div>
                 )}
@@ -615,96 +559,12 @@ const AgentWorkflow = () => {
                 icon={Lightbulb}
                 color="bg-pink-500"
                 data={results.strategy}
-                isFallback={results.strategy.isFallback}
                 renderContent={() => (
                   <div className="space-y-4">
-                    {results.strategy.isFallback && (
-                      <div className="bg-pink-100 rounded-lg p-3 mb-4">
-                        <p className="text-pink-800 text-sm">
-                          <AlertTriangle className="h-4 w-4 inline mr-1" />
-                          Basic strategy generated due to API limitations
-                        </p>
-                      </div>
-                    )}
                     <div className="bg-pink-50 rounded-lg p-4">
-                      <h4 className="font-semibold text-pink-900 mb-2">Executive Summary</h4>
-                      <p className="text-gray-700">{results.strategy.executiveSummary}</p>
+                      <h4 className="font-semibold text-pink-900 mb-2">Strategy Output</h4>
+                      <pre className="text-xs whitespace-pre-wrap">{typeof results.strategy === "string" ? results.strategy : JSON.stringify(results.strategy, null, 2)}</pre>
                     </div>
-                    
-                    <div>
-                      <h4 className="font-semibold mb-2">Business Solutions ({results.strategy.solutions?.length || 0})</h4>
-                      <div className="space-y-4">
-                        {results.strategy.solutions?.map((solution, index) => (
-                          <div key={index} className="border rounded-lg p-4 relative">
-                            <div className="flex items-center justify-between mb-2">
-                              <h5 className="font-medium text-gray-900">{solution.name}</h5>
-                              <span className="text-xs bg-gray-100 px-2 py-1 rounded">{solution.framework}</span>
-                            </div>
-                            <p className="text-sm text-gray-600 mb-3">{solution.description}</p>
-                            
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div>
-                                <span className="text-sm font-medium text-gray-700">Value Proposition:</span>
-                                <p className="text-sm">{solution.valueProposition}</p>
-                              </div>
-                              <div>
-                                <span className="text-sm font-medium text-gray-700">Business Model:</span>
-                                <p className="text-sm">{solution.businessModel}</p>
-                              </div>
-                            </div>
-                            
-                            <div className="mt-3">
-                              <span className="text-sm font-medium text-gray-700">Key Features:</span>
-                              <div className="flex flex-wrap gap-2 mt-1">
-                                {solution.keyFeatures?.map((feature, featureIndex) => (
-                                  <span key={featureIndex} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                                    {feature}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                            <Button
-                              onClick={() => saveIdea(solution)}
-                              variant="outline"
-                              className="absolute bottom-4 right-4 flex items-center space-x-2"
-                            >
-                              <Bookmark className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    {results.strategy.topRecommendations && (
-                      <div>
-                        <h4 className="font-semibold mb-2">Top Recommendations</h4>
-                        <div className="space-y-3">
-                          {results.strategy.topRecommendations.map((rec, index) => (
-                            <div key={index} className="bg-gradient-to-r from-pink-50 to-purple-50 rounded-lg p-4">
-                              <h5 className="font-medium text-gray-900 mb-2">{rec.solution}</h5>
-                              <div className="grid grid-cols-2 gap-4 text-sm">
-                                <div>
-                                  <span className="text-gray-600">Market Size:</span>
-                                  <p>{rec.marketSize}</p>
-                                </div>
-                                <div>
-                                  <span className="text-gray-600">Feasibility:</span>
-                                  <p>{rec.feasibility}</p>
-                                </div>
-                                <div>
-                                  <span className="text-gray-600">Competitive Advantage:</span>
-                                  <p>{rec.competitiveAdvantage}</p>
-                                </div>
-                                <div>
-                                  <span className="text-gray-600">Dominance Potential:</span>
-                                  <p>{rec.dominancePotential}</p>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
                   </div>
                 )}
               />
